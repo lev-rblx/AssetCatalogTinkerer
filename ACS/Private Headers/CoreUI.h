@@ -83,7 +83,7 @@ struct _renditionkeytoken {
 
 @property (nonatomic, readonly) CGFloat scale;
 @property (nonatomic, readonly) NSString *name;
-@property (nonatomic, readonly) NSData *data;
+@property (nonatomic, readonly) NSData *srcData;
 @property (nonatomic, readonly) CGImageRef unslicedImage;
 @property (nonatomic, readonly) BOOL isVectorBased;
 @property (nonatomic, readonly) struct CGSVGDocument *svgDocument;

@@ -54,7 +54,12 @@ struct InfoCommand: AsyncParsableCommand {
 
         for image in images {
             guard let filename = image[kACSFilenameKey] as? String else { continue }
-            print(filename)
+            if let compressedSize = image[kACSCompressedSizeKey] as? NSNumber,
+               let uncompressedSize = image[kACSUncompressedSizeKey] as? NSNumber {
+                print("\(filename)\t\(uncompressedSize)\t\(compressedSize)")
+            } else {
+                print(filename)
+            }
         }
     }
 }

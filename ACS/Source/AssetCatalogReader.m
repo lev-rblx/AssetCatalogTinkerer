@@ -15,6 +15,8 @@ NSString * const kACSNameKey = @"name";
 NSString * const kACSImageKey = @"image";
 NSString * const kACSThumbnailKey = @"thumbnail";
 NSString * const kACSFilenameKey = @"filename";
+NSString * const kACSCompressedSizeKey = @"compressedSize";
+NSString * const kACSUncompressedSizeKey = @"uncompressedSize";
 NSString * const kACSContentsDataKey = @"data";
 NSString * const kACSImageRepKey = @"imagerep";
 
@@ -167,6 +169,7 @@ NSString * const kAssetCatalogReaderErrorDomain = @"br.com.guilhermerambo.AssetC
 
                     NSString *filename;
                     CGImageRef image;
+                    NSUInteger dataLength = 0;
 
                     if ([namedImage isKindOfClass:[CUINamedLayerStack class]]) {
                         CUINamedLayerStack *stack = (CUINamedLayerStack *)namedImage;
@@ -195,7 +198,7 @@ NSString * const kAssetCatalogReaderErrorDomain = @"br.com.guilhermerambo.AssetC
                     NSBitmapImageRep *imageRep = [[NSBitmapImageRep alloc] initWithCGImage:image];
                     imageRep.size = namedImage.size;
 
-                    NSDictionary *desc = [self imageDescriptionWithName:namedImage.name filename:filename representation:imageRep contentsData:^NSData *{
+                    NSDictionary *desc = [self imageDescriptionWithName:namedImage.name filename:filename representation:imageRep dataLength:dataLength contentsData:^NSData *{
                         return [imageRep representationUsingType:NSBitmapImageFileTypePNG properties:@{NSImageInterlaced:@(NO)}];
                     }];
 
@@ -272,7 +275,7 @@ NSString * const kAssetCatalogReaderErrorDomain = @"br.com.guilhermerambo.AssetC
                     return YES;
                 }];
                 NSString *const filename = [self filenameForVectorAssetNamed:[self cleanupRenditionName:rendition.name] renderingMode:rendition.vectorGlyphRenderingMode weight:key.themeGlyphWeight size:key.themeGlyphSize];
-                NSDictionary *desc = [self imageDescriptionWithName:rendition.name filename:filename representation:imageRep contentsData:^NSData *{
+                NSDictionary *desc = [self imageDescriptionWithName:rendition.name filename:filename representation:imageRep dataLength:rendition.srcData.length contentsData:^NSData *{
                     NSMutableData *data = [NSMutableData new];
                     CGSVGDocumentWriteToData(rendition.svgDocument, (__bridge CFMutableDataRef)data, NULL);
                     return data;
@@ -284,7 +287,7 @@ NSString * const kAssetCatalogReaderErrorDomain = @"br.com.guilhermerambo.AssetC
                 imageRep.size = NSMakeSize(CGImageGetWidth(rendition.unslicedImage), CGImageGetHeight(rendition.unslicedImage));
 
                 NSString *const filename = [self filenameForAssetNamed:[self cleanupRenditionName:rendition.name] scale:rendition.scale presentationState:key.themeState];
-                NSDictionary *desc = [self imageDescriptionWithName:rendition.name filename:filename representation:imageRep contentsData:^NSData *{
+                NSDictionary *desc = [self imageDescriptionWithName:rendition.name filename:filename representation:imageRep dataLength:rendition.srcData.length contentsData:^NSData *{
                     return [imageRep representationUsingType:NSBitmapImageFileTypePNG properties:@{NSImageInterlaced:@(NO)}];
                 }];
 
@@ -372,13 +375,18 @@ NSString * const kAssetCatalogReaderErrorDomain = @"br.com.guilhermerambo.AssetC
     return images;
 }
 
-- (NSDictionary *)imageDescriptionWithName:(NSString *)name filename:(NSString *)filename representation:(NSImageRep *)imageRep contentsData:(NSData *(^)(void))contentsData
+- (NSDictionary *)imageDescriptionWithName:(NSString *)name
+                                  filename:(NSString *)filename
+                            representation:(NSImageRep *)imageRep
+                                 dataLength:(NSUInteger)length
+                              contentsData:(NSData *(^)(void))contentsData
 {
     if (_resourceConstrained) {
         return @{
                  kACSNameKey : name,
                  kACSFilenameKey: filename,
-                 kACSImageRepKey: imageRep
+                 kACSImageRepKey: imageRep,
+                 kACSCompressedSizeKey: [NSNumber numberWithUnsignedInteger:length],
                  };
     } else {
         NSData *pngData = contentsData();
@@ -395,7 +403,9 @@ NSString * const kAssetCatalogReaderErrorDomain = @"br.com.guilhermerambo.AssetC
                  kACSImageKey : originalImage,
                  kACSThumbnailKey: thumbnail,
                  kACSFilenameKey: filename,
-                 kACSContentsDataKey: pngData
+                 kACSContentsDataKey: pngData,
+                 kACSCompressedSizeKey: [NSNumber numberWithUnsignedInteger:length],
+                 kACSUncompressedSizeKey: [NSNumber numberWithUnsignedInteger:pngData.length],
                  };
     }
 }
